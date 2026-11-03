@@ -71,6 +71,8 @@ label{display:block;color:var(--mute);font-size:13px;margin:12px 0 5px;text-tran
 .selday{background:var(--bg);font-weight:bold}
 .chev{color:var(--gold);font-size:22px}
 .bar{height:8px;border:1px solid var(--gold);border-radius:6px;overflow:hidden}.bar i{display:block;height:100%;background:var(--gold);width:0}
+.att{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dotted var(--gold);cursor:pointer}.att img{width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--gold)}.att .an{flex:1;overflow-wrap:anywhere;font-size:15px}.fi{font-size:28px;width:56px;text-align:center;color:var(--gold)}
+.lnk{color:var(--ink);border-bottom:1.5px solid var(--gold);text-decoration:none;font-size:14px}
 .hide{display:none}
 </style></head><body>
 <div class="wrap"><div class="frame">
@@ -102,6 +104,7 @@ label{display:block;color:var(--mute);font-size:13px;margin:12px 0 5px;text-tran
  <div class="add"><input id="subNew" placeholder="Add a step…" maxlength="100"><button class="btn" id="subAdd">Add</button></div>
  <label>Project</label><select id="dProj" style="width:100%"></select>
  <label>Description</label><textarea id="dDesc" placeholder="Add details, notes, links…"></textarea>
+ <div id="dAttBox"></div>
  <div class="row"><button id="dDone"></button><button class="del" id="dDel">Delete</button></div>
 </div>
 <div id="pdetail" class="hide">
@@ -113,6 +116,7 @@ label{display:block;color:var(--mute);font-size:13px;margin:12px 0 5px;text-tran
  <label>Status</label><select id="pStatus" style="width:100%"><option>Active</option><option>On hold</option><option>Done</option></select>
  <label>Target date</label><input id="pDue" type="date">
  <label>Notes &amp; links</label><textarea id="pNotes" placeholder="Anything else: links, contacts, ideas…"></textarea>
+ <div id="pAttBox"></div>
  <label>Tasks</label><div id="pTasks"></div>
  <div class="add"><input id="pNew" placeholder="Add a task to this project…" maxlength="120"><button class="btn" id="pAdd">Add</button></div>
  <div class="row"><button class="del" id="pDel">Delete project</button></div>
@@ -148,7 +152,7 @@ function ordered(arr){
   return r||x[1]-y[1]}).map(x=>x[0])}
 function row(t){
  const late=!t.done&&t.due&&t.due<today,subs=t.subs||[],sd=subs.filter(s=>s.d).length;
- const pn=(projects.find(p=>p.id===t.proj)||{}).name;const meta=[pn||'',subs.length?sd+'/'+subs.length+' steps':'',t.due?(late?'Overdue · ':'')+nice(t.due):''].filter(Boolean).join(' · ');
+ const pn=(projects.find(p=>p.id===t.proj)||{}).name;const meta=[pn||'',t.atts&&t.atts.length?t.atts.length+' attached':'',subs.length?sd+'/'+subs.length+' steps':'',t.due?(late?'Overdue · ':'')+nice(t.due):''].filter(Boolean).join(' · ');
  const act=pick?`<button class="zz" data-focus="${t.id}">${t.focus===today?'◎ Focused':'○ Focus'}</button>`:snz===t.id?`<span class="snz"><button data-snz="${t.id}:1">Tmrw</button><button data-snz="${t.id}:7">+1 wk</button><button data-snz="${t.id}:x" aria-label="Cancel">✕</button></span>`:`<button class="zz" data-zz="${t.id}">Snooze</button>`;
  return `<div class="task ${t.done?'done':''} ${late?'late':''}"><button class="star" data-star="${t.id}" aria-label="Priority">${t.star?'★':'☆'}</button><button class="box" data-tick="${t.id}" aria-label="Toggle done">${t.done?'✓':''}</button><span class="title" data-open="${t.id}">${esc(t.title)} ${t.desc?'<span class="dot">●</span>':''}${meta?`<span class="due">${meta}</span>`:''}</span>${t.done?'':act}</div>`}
 const sec=(a,b='')=>`<div class="sec"><span>${a}</span>${b}</div>`;
@@ -226,7 +230,7 @@ $('subAdd').onclick=addSub;$('subNew').onkeydown=e=>{if(e.key==='Enter')addSub()
 const chipTxt=()=>{$('dStar').textContent=cur.star?'★ Priority':'☆ Priority';$('dFocus').textContent=cur.focus===today?'◎ Focus today':'○ Focus today'};
 $('dStar').onclick=()=>{cur.star=!cur.star;chipTxt()};
 $('dFocus').onclick=()=>{if(cur.focus===today)cur.focus='';else cur.focus=today;chipTxt()};
-$('detail').onclick=e=>{
+$('detail').onclick=e=>{if(attClick(e))return;
  const g=a=>e.target.closest('['+a+']');
  const sd=g('data-sd'),sx=g('data-sx'),dz=g('data-dz');
  if(sd){const s=cur.subs[+sd.dataset.sd];s.d=!s.d;drawSubs()}
@@ -234,7 +238,7 @@ $('detail').onclick=e=>{
  else if(dz){$('dDue').value=addDays(Number(dz.dataset.dz));gcal()}};
 function openTask(id,fp){backP=!!fp;cur=T(id);if(!cur)return;cur.subs=cur.subs||[];
  $('dTitleH').textContent=cur.title;$('dTitle').value=cur.title;$('dDesc').value=cur.desc;$('dDue').value=cur.due||'';
- gcal();chipTxt();drawSubs();
+ gcal();chipTxt();drawSubs();cur.atts=cur.atts||[];drawAtts('d');drawLinks('d');
  $('dProj').innerHTML='<option value="">None</option>'+projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');$('dProj').value=cur.proj||'';
  $('dDone').textContent=cur.done?'Mark not done':'Mark done ✓';armed=false;$('dDel').textContent='Delete';
  $('main').classList.add('hide');$('pdetail').classList.add('hide');$('detail').classList.remove('hide');window.scrollTo(0,0)}
@@ -243,21 +247,21 @@ function close(){if(cur){cur.title=$('dTitle').value.trim()||cur.title;cur.desc=
  cur=null;$('detail').classList.add('hide');if(backP&&curP){$('pdetail').classList.remove('hide');drawProj()}else{$('main').classList.remove('hide');render()}}
 $('back').onclick=close;
 $('dDone').onclick=()=>{cur.done=!cur.done;close()};
-$('dDel').onclick=()=>{if(!armed){armed=true;$('dDel').textContent='Tap again to delete';return}armed=false;$('dDel').textContent='Delete';tasks=tasks.filter(x=>x!==cur);cur=null;save();close()};
+$('dDel').onclick=()=>{if(!armed){armed=true;$('dDel').textContent='Tap again to delete';return}armed=false;$('dDel').textContent='Delete';(cur.atts||[]).forEach(f=>delF(f.id).catch(()=>{}));tasks=tasks.filter(x=>x!==cur);cur=null;save();close()};
 function projHtml(){
  if(!projects.length)return '<div class="empty">No projects yet. Type a name above and tap Add.</div>';
  return projects.map(p=>{const ts=tasks.filter(t=>t.proj===p.id),d=ts.filter(t=>t.done).length;
   return `<div class="task" data-popen="${p.id}" style="cursor:pointer"><span class="title">${esc(p.name)} ${p.desc?'<span class="dot">●</span>':''}<span class="due">${p.status}${p.due?' · '+nice(p.due):''} · ${d}/${ts.length} tasks</span></span><span class="chev">›</span></div>`}).join('')}
 function openProj(id){curP=projects.find(p=>p.id===id);if(!curP)return;armedP=false;$('pDel').textContent='Delete project';
  $('pName').value=curP.name;$('pDesc').value=curP.desc||'';$('pStatus').value=curP.status||'Active';$('pDue').value=curP.due||'';$('pNotes').value=curP.notes||'';
- $('main').classList.add('hide');$('pdetail').classList.remove('hide');drawProj();window.scrollTo(0,0)}
+ $('main').classList.add('hide');$('pdetail').classList.remove('hide');drawProj();curP.atts=curP.atts||[];drawAtts('p');drawLinks('p');window.scrollTo(0,0)}
 function drawProj(){const ts=tasks.filter(t=>t.proj===curP.id),d=ts.filter(t=>t.done).length;
  $('pTitleH').textContent=curP.name;$('pBar').style.width=(ts.length?Math.round(d/ts.length*100):0)+'%';$('pProg').textContent=ts.length?d+' of '+ts.length+' tasks done':'No tasks yet';
  $('pTasks').innerHTML=ordered(ts).map(row).join('')||'<div class="empty">No tasks in this project.</div>'}
 function saveProj(){if(!curP)return;curP.name=$('pName').value.trim()||curP.name;curP.desc=$('pDesc').value;curP.status=$('pStatus').value;curP.due=$('pDue').value;curP.notes=$('pNotes').value;saveP()}
 function closeProj(){saveProj();curP=null;$('pdetail').classList.add('hide');$('main').classList.remove('hide');render()}
 $('pBack').onclick=closeProj;
-$('pdetail').onclick=e=>{const g=a=>e.target.closest('['+a+']');const k=g('data-tick'),s=g('data-star'),o=g('data-open'),z=g('data-zz'),sn=g('data-snz');
+$('pdetail').onclick=e=>{if(attClick(e))return;const g=a=>e.target.closest('['+a+']');const k=g('data-tick'),s=g('data-star'),o=g('data-open'),z=g('data-zz'),sn=g('data-snz');
  if(k){const t=T(k.dataset.tick);t.done=!t.done;save();drawProj()}
  else if(s){const t=T(s.dataset.star);t.star=!t.star;save();drawProj()}
  else if(z){snz=z.dataset.zz;drawProj()}
@@ -265,7 +269,38 @@ $('pdetail').onclick=e=>{const g=a=>e.target.closest('['+a+']');const k=g('data-
  else if(o){saveProj();snz=null;openTask(o.dataset.open,true)}};
 function addPT(){const v=$('pNew').value.trim();if(!v)return;tasks.unshift({id:Date.now().toString(36),title:v,desc:'',done:false,star:false,subs:[],due:'',proj:curP.id});$('pNew').value='';save();drawProj()}
 $('pAdd').onclick=addPT;$('pNew').onkeydown=e=>{if(e.key==='Enter')addPT()};
-$('pDel').onclick=()=>{if(!armedP){armedP=true;$('pDel').textContent='Tap again to delete';return}tasks.forEach(t=>{if(t.proj===curP.id)t.proj=''});projects=projects.filter(p=>p!==curP);curP=null;save();saveP();$('pdetail').classList.add('hide');$('main').classList.remove('hide');render()};
+$('pDel').onclick=()=>{if(!armedP){armedP=true;$('pDel').textContent='Tap again to delete';return}tasks.forEach(t=>{if(t.proj===curP.id)t.proj=''});(curP.atts||[]).forEach(f=>delF(f.id).catch(()=>{}));projects=projects.filter(p=>p!==curP);curP=null;save();saveP();$('pdetail').classList.add('hide');$('main').classList.remove('hide');render()};
+
+const dbp=new Promise(res=>{try{const r=indexedDB.open('mybrain-files',1);r.onupgradeneeded=()=>r.result.createObjectStore('f');r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)}catch(e){res(null)}});
+const idb=async(mode,fn)=>{const d=await dbp;if(!d)throw new Error('nodb');return new Promise((ok,no)=>{const tx=d.transaction('f',mode),r=fn(tx.objectStore('f'));tx.oncomplete=()=>ok(r&&r.result);tx.onerror=()=>no(tx.error)})};
+const putF=(id,b)=>idb('readwrite',s=>s.put(b,id)),getF=id=>idb('readonly',s=>s.get(id)),delF=id=>idb('readwrite',s=>s.delete(id));
+async function shrink(f){if(!f.type.startsWith('image/')||f.type==='image/gif')return f;
+ try{const b=await createImageBitmap(f),sc=Math.min(1,1600/Math.max(b.width,b.height)),c=document.createElement('canvas');c.width=Math.round(b.width*sc);c.height=Math.round(b.height*sc);c.getContext('2d').drawImage(b,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(x=>r(x||f),'image/jpeg',.85))}catch(e){return f}}
+const attHtml=p=>`<div class="chips"><button class="mini" data-copy="${p}">Copy text</button></div><div id="${p}Links"></div><label>Photos &amp; files</label><div id="${p}Atts"></div><div class="chips"><button class="mini" data-add="${p}:Photo">+ Photo</button><button class="mini" data-add="${p}:File">+ File</button></div><input type="file" id="${p}Photo" accept="image/*" multiple class="hide"><input type="file" id="${p}File" multiple class="hide"><div class="flash" id="${p}Msg"></div>`;
+$('dAttBox').innerHTML=attHtml('d');$('pAttBox').innerHTML=attHtml('p');
+const owner=p=>p==='d'?cur:curP,saveAll=p=>p==='d'?save():saveP();
+let mt;const msg=(p,t)=>{$(p+'Msg').textContent=t;clearTimeout(mt);mt=setTimeout(()=>$(p+'Msg').textContent='',2500)};
+const URLs={};
+function drawLinks(p){const t=$(p+'Desc').value+(p==='p'?' '+$('pNotes').value:''),u=[...new Set(t.match(/https?:\/\/[^\s<>"']+/g)||[])];
+ $(p+'Links').innerHTML=u.length?'<div class="chips">'+u.map(x=>`<a class="lnk" href="${esc(x)}" target="_blank" rel="noopener">${esc(x.replace(/^https?:\/\//,'').slice(0,34))}</a>`).join('')+'</div>':''}
+['dDesc','pDesc','pNotes'].forEach(id=>$(id).addEventListener('input',()=>drawLinks(id[0])));
+async function drawAtts(p){const o=owner(p),box=$(p+'Atts');if(!o)return;const a=o.atts||[];
+ box.innerHTML=a.map((f,i)=>`<div class="att" data-att="${p}:${i}">${f.type.startsWith('image/')?`<img alt="" data-img="${f.id}">`:'<span class="fi">▤</span>'}<span class="an">${esc(f.name)}</span><button class="x" data-rm="${p}:${i}" aria-label="Remove">×</button></div>`).join('');
+ for(const f of a){if(!f.type.startsWith('image/'))continue;try{const b=await getF(f.id);if(b){const u=URLs[f.id]||(URLs[f.id]=URL.createObjectURL(b)),im=box.querySelector(`[data-img="${f.id}"]`);if(im)im.src=u}}catch(e){}}}
+function attClick(e){for(const k of ['data-copy','data-add','data-rm','data-att']){const el=e.target.closest('['+k+']');if(el){attAct(k,el);return true}}return false}
+async function attAct(k,el){
+ if(k==='data-copy'){const p=el.dataset.copy;let t=$(p+'Desc').value;if(p==='p'&&$('pNotes').value)t+='\n\n'+$('pNotes').value;
+  try{await navigator.clipboard.writeText(t)}catch(_){const ta=$(p+'Desc');ta.select();try{document.execCommand('copy')}catch(_){}}msg(p,'Copied');return}
+ if(k==='data-add'){const[p,t]=el.dataset.add.split(':');$(p+t).click();return}
+ const[p,i]=el.dataset[k==='data-rm'?'rm':'att'].split(':'),o=owner(p),f=o.atts[+i];
+ if(k==='data-rm'){if(el.dataset.arm!=='1'){el.dataset.arm='1';el.textContent='Remove?';return}
+  try{await delF(f.id)}catch(_){}o.atts.splice(+i,1);saveAll(p);drawAtts(p);return}
+ try{const b=await getF(f.id);if(!b){msg(p,'File not found');return}const u=URL.createObjectURL(b);
+  if(f.type.startsWith('image/')||f.type==='application/pdf')window.open(u,'_blank');
+  else{const a=document.createElement('a');a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove()}}catch(_){msg(p,'Could not open file')}}
+['d','p'].forEach(p=>['Photo','File'].forEach(t=>{$(p+t).onchange=async e=>{const o=owner(p);if(!o)return;o.atts=o.atts||[];
+ for(const f0 of e.target.files){try{const b=t==='Photo'?await shrink(f0):f0,id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);await putF(id,b);o.atts.push({id,name:f0.name||'photo.jpg',type:b.type||f0.type||'application/octet-stream',size:b.size})}catch(_){msg(p,'Could not save '+(f0.name||'file'))}}
+ e.target.value='';saveAll(p);drawAtts(p)}}));
 render();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script></body></html>
