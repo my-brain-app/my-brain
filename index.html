@@ -20,8 +20,8 @@ header{text-align:center}
 .logo img{width:142%;margin:-21% 0 0 -21%;display:block}
 h1{margin:8px 0 2px;font-size:28px;letter-spacing:.5px}
 .sub0{color:var(--mute);font-size:14px;margin-bottom:12px;font-style:italic}
-.seg{display:flex;border:1.5px solid var(--gold);border-radius:10px;overflow:hidden;margin-bottom:12px}
-.seg button{flex:1;padding:10px 2px;border:0;background:none;color:var(--ink);font:inherit;font-size:14px}
+.seg{display:flex;border:1.5px solid var(--gold);border-radius:10px;overflow-x:auto;overflow-y:hidden;margin-bottom:12px;scrollbar-width:none}.seg::-webkit-scrollbar{display:none}
+.seg button{flex:1 0 auto;padding:10px 12px;border:0;background:none;color:var(--ink);font:inherit;font-size:14px}
 .seg .on{background:var(--ink);color:var(--card)}
 .add{display:flex;gap:8px;margin:10px 0}
 input,textarea,select{font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--gold);border-radius:10px;padding:11px 12px;width:100%}
@@ -73,12 +73,13 @@ label{display:block;color:var(--mute);font-size:13px;margin:12px 0 5px;text-tran
 .bar{height:8px;border:1px solid var(--gold);border-radius:6px;overflow:hidden}.bar i{display:block;height:100%;background:var(--gold);width:0}
 .att{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dotted var(--gold);cursor:pointer}.att img{width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--gold)}.att .an{flex:1;overflow-wrap:anywhere;font-size:15px}.fi{font-size:28px;width:56px;text-align:center;color:var(--gold)}
 .lnk{color:var(--ink);border-bottom:1.5px solid var(--gold);text-decoration:none;font-size:14px}
+.card{border:1.5px solid var(--gold);border-radius:10px;padding:12px;margin-bottom:8px}.stats{display:flex;gap:8px;margin-top:10px;text-align:center}.stats div{flex:1}.stats b{display:block;font-size:18px}.stats span{font-size:12px;color:var(--mute)}.nx{margin-top:10px;font-size:14px}
 .hide{display:none}
 </style></head><body>
 <div class="wrap"><div class="frame">
 <div id="main">
  <header><div class="logo"><img src="icon-192.png" alt="My Brain"></div><h1>My Brain</h1><div class="sub0" id="count"></div></header>
- <div class="seg"><button id="v_today">Today</button><button id="v_week">Week</button><button id="v_list">List</button><button id="v_cal">Month</button><button id="v_proj">Projects</button></div>
+ <div class="seg"><button id="v_today">Today</button><button id="v_week">Week</button><button id="v_list">List</button><button id="v_cal">Month</button><button id="v_proj">Projects</button><button id="v_car">Car</button></div>
  <div id="sortBox" class="sortrow hide">Sort by
   <select id="sort"><option value="star">Priority first</option><option value="due">Due date</option><option value="new">Newest</option><option value="az">A–Z</option></select></div>
  <div id="weekBox" class="hide"><div class="mh"><button data-wk="-1" aria-label="Previous week">‹</button><b id="wTitle"></b><button data-wk="1" aria-label="Next week">›</button></div></div>
@@ -121,6 +122,19 @@ label{display:block;color:var(--mute);font-size:13px;margin:12px 0 5px;text-tran
  <div class="add"><input id="pNew" placeholder="Add a task to this project…" maxlength="120"><button class="btn" id="pAdd">Add</button></div>
  <div class="row"><button class="del" id="pDel">Delete project</button></div>
 </div>
+<div id="cdetail" class="hide">
+ <button class="back" id="cBack">‹ Back</button>
+ <h2 id="cTitleH"></h2>
+ <label>Date</label><input id="cDate" type="date">
+ <label>What was done</label><textarea id="cDesc" placeholder="Oil change, brake pads, tires…"></textarea>
+ <label>Garage</label><input id="cGarage" list="garages" maxlength="80" placeholder="Garage or mechanic"><datalist id="garages"></datalist>
+ <label>Cost</label><input id="cCost" type="number" inputmode="decimal" placeholder="0">
+ <label>Mileage (km)</label><input id="cKm" type="number" inputmode="numeric" placeholder="0">
+ <label>Next service due</label><input id="cNextDate" type="date"><input id="cNextKm" type="number" inputmode="numeric" placeholder="or at km" style="margin-top:8px">
+ <a class="gcal hide" id="cGcal" target="_blank" rel="noopener">+ Add reminder to Google Calendar</a>
+ <div id="cAttBox"></div>
+ <div class="row"><button id="cShare">Share</button><button class="del" id="cDel">Delete</button></div>
+</div>
 </div></div>
 <script>
 const $=id=>document.getElementById(id);
@@ -128,15 +142,18 @@ const pad=n=>String(n).padStart(2,'0');
 const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const today=ymd(new Date());
 const addDays=n=>{const d=new Date();d.setDate(d.getDate()+n);return ymd(d)};
-let tasks=[],projects=[],cur=null,curP=null,backP=false,view='today',month=new Date(),sel=today,snz=null,sort='star',armed=false,armedP=false,wk=0,pick=false;
+let tasks=[],projects=[],car={name:'My car',recs:[]},curC=null,armedC=false,cur=null,curP=null,backP=false,view='today',month=new Date(),sel=today,snz=null,sort='star',armed=false,armedP=false,wk=0,pick=false;
 month.setDate(1);
 try{tasks=JSON.parse(localStorage.getItem('tickoff')||'[]');sort=localStorage.getItem('tickoff-sort')||'star';projects=JSON.parse(localStorage.getItem('tickoff-proj')||'[]')}catch(e){}
 if(!Array.isArray(projects))projects=[];
+try{car=Object.assign(car,JSON.parse(localStorage.getItem('tickoff-car')||'{}'))}catch(e){}
+if(!Array.isArray(car.recs))car.recs=[];
 if(!Array.isArray(tasks))tasks=[];
 if(!['star','due','new','az'].includes(sort))sort='star';
 $('sort').value=sort;
 const save=()=>{try{localStorage.setItem('tickoff',JSON.stringify(tasks))}catch(e){}};
 const saveP=()=>{try{localStorage.setItem('tickoff-proj',JSON.stringify(projects))}catch(e){}};
+const saveC=()=>{try{localStorage.setItem('tickoff-car',JSON.stringify(car))}catch(e){}};
 const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML};
 const nice=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})};
 const T=id=>tasks.find(x=>x.id===id);
@@ -160,13 +177,14 @@ function weekStart(){const d=new Date();d.setDate(d.getDate()-d.getDay()+wk*7);r
 function render(){
  const open=tasks.filter(t=>!t.done).length,dueN=tasks.filter(t=>!t.done&&t.due&&t.due<=today).length;
  $('count').textContent=tasks.length?open+' to do · '+dueN+' due today':'Nothing yet';
- ['today','week','list','cal','proj'].forEach(v=>$('v_'+v).className=view===v?'on':'');
+ ['today','week','list','cal','proj','car'].forEach(v=>$('v_'+v).className=view===v?'on':'');
  $('calBox').classList.toggle('hide',view!=='cal');
  $('weekBox').classList.toggle('hide',view!=='week');
  $('sortBox').classList.toggle('hide',view!=='list');
- $('new').placeholder=view==='proj'?'Add a project…':'Add a task…';
+ $('new').placeholder=view==='proj'?'Add a project…':view==='car'?'Add a service or repair…':'Add a task…';
  let h='';
- if(view==='proj'){h=projHtml()}
+ if(view==='car'){h=carHtml()}
+ else if(view==='proj'){h=projHtml()}
  else if(view==='list'){const s=ordered(tasks);h=s.length?s.map(row).join(''):'<div class="empty">All clear. Add your first task above.</div>'}
  else if(view==='today'){
   if(pick){h=sec('Pick tasks for today','<button class="mini" data-pick="0">Done</button>')+ordered(tasks.filter(t=>!t.done)).map(row).join('')}
@@ -195,15 +213,16 @@ function render(){
  $('tasks').innerHTML=h;
 }
 function add(){const v=$('new').value.trim();if(!v)return;
+ if(view==='car'){const r={id:Date.now().toString(36),date:today,work:v,garage:'',cost:'',km:'',nextDate:'',nextKm:''};car.recs.unshift(r);$('new').value='';saveC();openCar(r.id);return}
  if(view==='proj'){const p={id:Date.now().toString(36),name:v,desc:'',status:'Active',due:'',notes:''};projects.unshift(p);$('new').value='';saveP();openProj(p.id);return}
  tasks.unshift({id:Date.now().toString(36),title:v,desc:'',done:false,star:false,subs:[],due:view==='cal'||view==='week'?sel:view==='today'?today:''});
  $('new').value='';save();render()}
 $('addBtn').onclick=add;$('new').onkeydown=e=>{if(e.key==='Enter')add()};
-['today','week','list','cal','proj'].forEach(v=>$('v_'+v).onclick=()=>{view=v;snz=null;pick=false;render()});
+['today','week','list','cal','proj','car'].forEach(v=>$('v_'+v).onclick=()=>{view=v;snz=null;pick=false;render()});
 $('sort').onchange=()=>{sort=$('sort').value;try{localStorage.setItem('tickoff-sort',sort)}catch(e){}render()};
 $('main').onclick=e=>{
  const g=a=>e.target.closest('['+a+']');
- const k=g('data-tick'),o=g('data-open'),d=g('data-day'),n=g('data-nav'),s=g('data-star'),z=g('data-zz'),sn=g('data-snz'),fo=g('data-focus'),pk=g('data-pick'),w=g('data-wk'),wd=g('data-wday'),po=g('data-popen');
+ const k=g('data-tick'),o=g('data-open'),d=g('data-day'),n=g('data-nav'),s=g('data-star'),z=g('data-zz'),sn=g('data-snz'),fo=g('data-focus'),pk=g('data-pick'),w=g('data-wk'),wd=g('data-wday'),po=g('data-popen'),cr=g('data-copen');
  if(k){const t=T(k.dataset.tick);t.done=!t.done;save();render()}
  else if(s){const t=T(s.dataset.star);t.star=!t.star;save();render()}
  else if(z){snz=z.dataset.zz;render()}
@@ -213,6 +232,7 @@ $('main').onclick=e=>{
  else if(w){wk+=Number(w.dataset.wk);render()}
  else if(wd){sel=wd.dataset.wday;render()}
  else if(po){openProj(po.dataset.popen)}
+ else if(cr){openCar(cr.dataset.copen)}
  else if(o){snz=null;openTask(o.dataset.open)}
  else if(d){sel=d.dataset.day;render()}
  else if(n){month=new Date(month.getFullYear(),month.getMonth()+Number(n.dataset.nav),1);render()}};
@@ -276,14 +296,14 @@ const idb=async(mode,fn)=>{const d=await dbp;if(!d)throw new Error('nodb');retur
 const putF=(id,b)=>idb('readwrite',s=>s.put(b,id)),getF=id=>idb('readonly',s=>s.get(id)),delF=id=>idb('readwrite',s=>s.delete(id));
 async function shrink(f){if(!f.type.startsWith('image/')||f.type==='image/gif')return f;
  try{const b=await createImageBitmap(f),sc=Math.min(1,1600/Math.max(b.width,b.height)),c=document.createElement('canvas');c.width=Math.round(b.width*sc);c.height=Math.round(b.height*sc);c.getContext('2d').drawImage(b,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(x=>r(x||f),'image/jpeg',.85))}catch(e){return f}}
-const attHtml=p=>`<div class="chips"><button class="mini" data-copy="${p}">Copy text</button></div><div id="${p}Links"></div><label>Photos &amp; files</label><div id="${p}Atts"></div><div class="chips"><button class="mini" data-add="${p}:Photo">+ Photo</button><button class="mini" data-add="${p}:File">+ File</button></div><input type="file" id="${p}Photo" accept="image/*" multiple class="hide"><input type="file" id="${p}File" multiple class="hide"><div class="flash" id="${p}Msg"></div>`;
-$('dAttBox').innerHTML=attHtml('d');$('pAttBox').innerHTML=attHtml('p');
-const owner=p=>p==='d'?cur:curP,saveAll=p=>p==='d'?save():saveP();
+const attHtml=p=>`<div class="chips"><button class="mini" data-copy="${p}">Copy text</button></div><div id="${p}Links"></div><label>${p==='c'?'Invoice, photos &amp; files':'Photos &amp; files'}</label><div id="${p}Atts"></div><div class="chips"><button class="mini" data-add="${p}:Photo">+ Photo</button><button class="mini" data-add="${p}:File">+ File</button></div><input type="file" id="${p}Photo" accept="image/*" multiple class="hide"><input type="file" id="${p}File" multiple class="hide"><div class="flash" id="${p}Msg"></div>`;
+$('dAttBox').innerHTML=attHtml('d');$('pAttBox').innerHTML=attHtml('p');$('cAttBox').innerHTML=attHtml('c');
+const owner=p=>p==='d'?cur:p==='c'?curC:curP,saveAll=p=>p==='d'?save():p==='c'?saveC():saveP();
 let mt;const msg=(p,t)=>{$(p+'Msg').textContent=t;clearTimeout(mt);mt=setTimeout(()=>$(p+'Msg').textContent='',2500)};
 const URLs={};
 function drawLinks(p){const t=$(p+'Desc').value+(p==='p'?' '+$('pNotes').value:''),u=[...new Set(t.match(/https?:\/\/[^\s<>"']+/g)||[])];
  $(p+'Links').innerHTML=u.length?'<div class="chips">'+u.map(x=>`<a class="lnk" href="${esc(x)}" target="_blank" rel="noopener">${esc(x.replace(/^https?:\/\//,'').slice(0,34))}</a>`).join('')+'</div>':''}
-['dDesc','pDesc','pNotes'].forEach(id=>$(id).addEventListener('input',()=>drawLinks(id[0])));
+['dDesc','pDesc','pNotes','cDesc'].forEach(id=>$(id).addEventListener('input',()=>drawLinks(id[0])));
 async function drawAtts(p){const o=owner(p),box=$(p+'Atts');if(!o)return;const a=o.atts||[];
  box.innerHTML=a.map((f,i)=>`<div class="att" data-att="${p}:${i}">${f.type.startsWith('image/')?`<img alt="" data-img="${f.id}">`:'<span class="fi">▤</span>'}<span class="an">${esc(f.name)}</span><button class="x" data-rm="${p}:${i}" aria-label="Remove">×</button></div>`).join('');
  for(const f of a){if(!f.type.startsWith('image/'))continue;try{const b=await getF(f.id);if(b){const u=URLs[f.id]||(URLs[f.id]=URL.createObjectURL(b)),im=box.querySelector(`[data-img="${f.id}"]`);if(im)im.src=u}}catch(e){}}}
@@ -298,9 +318,42 @@ async function attAct(k,el){
  try{const b=await getF(f.id);if(!b){msg(p,'File not found');return}const u=URL.createObjectURL(b);
   if(f.type.startsWith('image/')||f.type==='application/pdf')window.open(u,'_blank');
   else{const a=document.createElement('a');a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove()}}catch(_){msg(p,'Could not open file')}}
-['d','p'].forEach(p=>['Photo','File'].forEach(t=>{$(p+t).onchange=async e=>{const o=owner(p);if(!o)return;o.atts=o.atts||[];
+['d','p','c'].forEach(p=>['Photo','File'].forEach(t=>{$(p+t).onchange=async e=>{const o=owner(p);if(!o)return;o.atts=o.atts||[];
  for(const f0 of e.target.files){try{const b=t==='Photo'?await shrink(f0):f0,id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);await putF(id,b);o.atts.push({id,name:f0.name||'photo.jpg',type:b.type||f0.type||'application/octet-stream',size:b.size})}catch(_){msg(p,'Could not save '+(f0.name||'file'))}}
  e.target.value='';saveAll(p);drawAtts(p)}}));
+
+const money=n=>Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2});
+const nicey=s=>{if(!s)return'';const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'})};
+function carHtml(){
+ const rs=[...car.recs].sort((a,b)=>(b.date||'').localeCompare(a.date||'')),yr=today.slice(0,4),sum=a=>a.reduce((s,r)=>s+(Number(r.cost)||0),0);
+ const nx=rs.find(r=>r.nextDate||r.nextKm),lk=rs.find(r=>r.km),late=nx&&nx.nextDate&&nx.nextDate<today;
+ let h=`<div class="card"><input id="carName" value="${esc(car.name).replace(/"/g,'&quot;')}" maxlength="40" aria-label="Car name"><div class="stats"><div><b>${rs.length}</b><span>services</span></div><div><b>${money(sum(rs.filter(r=>(r.date||'').startsWith(yr))))}</b><span>this year</span></div><div><b>${money(sum(rs))}</b><span>total</span></div></div>`;
+ if(lk)h+=`<div class="nx">Last mileage: ${money(lk.km)} km</div>`;
+ if(nx)h+=`<div class="nx" style="${late?'color:#9a3b2e':''}">Next service: ${[nx.nextDate?(late?'overdue · ':'')+nicey(nx.nextDate):'',nx.nextKm?'at '+money(nx.nextKm)+' km':''].filter(Boolean).join(' or ')}</div>`;
+ h+='</div>';
+ if(!rs.length)return h+'<div class="empty">No services yet. Type what was done above and tap Add.</div>';
+ return h+rs.map(r=>{const n=(r.atts||[]).length;return `<div class="task" data-copen="${r.id}" style="cursor:pointer"><span class="title">${esc((r.work||'Service').split('\n')[0])}<span class="due">${[nicey(r.date),r.garage,r.cost?money(r.cost):'',r.km?money(r.km)+' km':'',n?n+' attached':''].filter(Boolean).map(esc).join(' · ')}</span></span><span class="chev">›</span></div>`}).join('')}
+$('tasks').addEventListener('change',e=>{if(e.target.id==='carName'){car.name=e.target.value.trim()||'My car';saveC()}});
+function cGcal(){const v=$('cNextDate').value,a=$('cGcal');if(!v){a.classList.add('hide');return}
+ const[y,m,d]=v.split('-').map(Number),nx=new Date(y,m-1,d+1),f=s=>s.replace(/-/g,'');
+ a.href='https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(car.name+': next service')+'&details='+encodeURIComponent($('cDesc').value)+'&dates='+f(v)+'/'+f(ymd(nx));a.classList.remove('hide')}
+$('cNextDate').onchange=cGcal;
+function openCar(id){curC=car.recs.find(r=>r.id===id);if(!curC)return;armedC=false;$('cDel').textContent='Delete';curC.atts=curC.atts||[];
+ $('cDate').value=curC.date||'';$('cDesc').value=curC.work||'';$('cGarage').value=curC.garage||'';$('cCost').value=curC.cost||'';$('cKm').value=curC.km||'';$('cNextDate').value=curC.nextDate||'';$('cNextKm').value=curC.nextKm||'';
+ $('garages').innerHTML=[...new Set(car.recs.map(r=>r.garage).filter(Boolean))].map(g=>`<option value="${esc(g).replace(/"/g,'&quot;')}">`).join('');
+ $('cTitleH').textContent=(curC.work||'Service').split('\n')[0].slice(0,40);
+ cGcal();drawAtts('c');drawLinks('c');
+ $('main').classList.add('hide');$('cdetail').classList.remove('hide');window.scrollTo(0,0)}
+function saveCar(){if(!curC)return;curC.date=$('cDate').value;curC.work=$('cDesc').value.trim()||curC.work||'Service';curC.garage=$('cGarage').value.trim();curC.cost=$('cCost').value;curC.km=$('cKm').value;curC.nextDate=$('cNextDate').value;curC.nextKm=$('cNextKm').value;saveC()}
+function closeCar(){saveCar();curC=null;$('cdetail').classList.add('hide');$('main').classList.remove('hide');render()}
+$('cBack').onclick=closeCar;
+$('cdetail').onclick=e=>{attClick(e)};
+$('cDel').onclick=()=>{if(!armedC){armedC=true;$('cDel').textContent='Tap again to delete';return}(curC.atts||[]).forEach(f=>delF(f.id).catch(()=>{}));car.recs=car.recs.filter(r=>r!==curC);curC=null;saveC();$('cdetail').classList.add('hide');$('main').classList.remove('hide');render()};
+$('cShare').onclick=async()=>{saveCar();const r=curC,text=[r.work,nicey(r.date),r.garage?'Garage: '+r.garage:'',r.cost?'Cost: '+money(r.cost):'',r.km?'Mileage: '+money(r.km)+' km':''].filter(Boolean).join('\n');
+ try{const files=[];for(const f of r.atts||[]){const b=await getF(f.id);if(b)files.push(new File([b],f.name,{type:f.type}))}
+  if(navigator.canShare&&files.length&&navigator.canShare({files}))await navigator.share({title:car.name+' service',text,files});
+  else if(navigator.share)await navigator.share({title:car.name+' service',text});
+  else{await navigator.clipboard.writeText(text);msg('c','Details copied')}}catch(e){}};
 render();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script></body></html>
