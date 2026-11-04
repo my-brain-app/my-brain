@@ -79,7 +79,7 @@ label{display:block;color:var(--mute);font-size:13px;margin:12px 0 5px;text-tran
 <div class="wrap"><div class="frame">
 <div id="main">
  <header><div class="logo"><img src="icon-192.png" alt="My Brain"></div><h1>My Brain</h1><div class="sub0" id="count"></div></header>
- <div class="seg"><button id="v_today">Today</button><button id="v_week">Week</button><button id="v_list">List</button><button id="v_cal">Month</button><button id="v_proj">Projects</button><button id="v_car">Car</button></div>
+ <div class="seg"><button id="v_today">Today</button><button id="v_week">Week</button><button id="v_list">List</button><button id="v_cal">Month</button><button id="v_proj">Projects</button><button id="v_car">Car</button><button id="v_home">Home</button><button id="v_rev">Review</button></div>
  <div id="sortBox" class="sortrow hide">Sort by
   <select id="sort"><option value="star">Priority first</option><option value="due">Due date</option><option value="new">Newest</option><option value="az">A–Z</option></select></div>
  <div id="weekBox" class="hide"><div class="mh"><button data-wk="-1" aria-label="Previous week">‹</button><b id="wTitle"></b><button data-wk="1" aria-label="Next week">›</button></div></div>
@@ -88,7 +88,7 @@ label{display:block;color:var(--mute);font-size:13px;margin:12px 0 5px;text-tran
   <div class="grid" id="grid"></div>
   <label id="selLabel"></label>
  </div>
- <div class="add"><input id="new" placeholder="Add a task…" maxlength="120"><button class="btn" id="addBtn">Add</button></div>
+ <div class="add" id="addRow"><input id="new" placeholder="Add a task…" maxlength="120"><button class="btn" id="addBtn">Add</button></div>
  <div class="flash" id="flash"></div>
  <div id="tasks"></div>
 </div>
@@ -135,6 +135,18 @@ label{display:block;color:var(--mute);font-size:13px;margin:12px 0 5px;text-tran
  <div id="cAttBox"></div>
  <div class="row"><button id="cShare">Share</button><button class="del" id="cDel">Delete</button></div>
 </div>
+<div id="hdetail" class="hide">
+ <button class="back" id="hBack">‹ Back</button>
+ <h2 id="hTitleH"></h2>
+ <label>Date</label><input id="hDate" type="date">
+ <label>What was done</label><textarea id="hDesc" placeholder="Fixed the roof, replaced a tap…"></textarea>
+ <label>Who did it</label><input id="hWho" list="whos" maxlength="80" placeholder="Plumber, painter, shop…"><datalist id="whos"></datalist>
+ <label>Cost</label><input id="hCost" type="number" inputmode="decimal" placeholder="0">
+ <label>Next job due</label><input id="hNextWhat" maxlength="80" placeholder="What is next? (optional)"><input id="hNextDate" type="date" style="margin-top:8px">
+ <a class="gcal hide" id="hGcal" target="_blank" rel="noopener">+ Add reminder to Google Calendar</a>
+ <div id="hAttBox"></div>
+ <div class="row"><button id="hShare">Share</button><button class="del" id="hDel">Delete</button></div>
+</div>
 </div></div>
 <script>
 const $=id=>document.getElementById(id);
@@ -142,18 +154,23 @@ const pad=n=>String(n).padStart(2,'0');
 const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const today=ymd(new Date());
 const addDays=n=>{const d=new Date();d.setDate(d.getDate()+n);return ymd(d)};
-let tasks=[],projects=[],car={name:'My car',recs:[]},curC=null,armedC=false,cur=null,curP=null,backP=false,view='today',month=new Date(),sel=today,snz=null,sort='star',armed=false,armedP=false,wk=0,pick=false;
+let tasks=[],projects=[],car={name:'My car',recs:[]},curC=null,armedC=false,home={name:'My house',recs:[]},curH=null,armedH=false,rw=0,rev={},cur=null,curP=null,backP=false,view='today',month=new Date(),sel=today,snz=null,sort='star',armed=false,armedP=false,wk=0,pick=false;
 month.setDate(1);
 try{tasks=JSON.parse(localStorage.getItem('tickoff')||'[]');sort=localStorage.getItem('tickoff-sort')||'star';projects=JSON.parse(localStorage.getItem('tickoff-proj')||'[]')}catch(e){}
 if(!Array.isArray(projects))projects=[];
 try{car=Object.assign(car,JSON.parse(localStorage.getItem('tickoff-car')||'{}'))}catch(e){}
 if(!Array.isArray(car.recs))car.recs=[];
+try{home=Object.assign(home,JSON.parse(localStorage.getItem('tickoff-home')||'{}'));rev=JSON.parse(localStorage.getItem('tickoff-rev')||'{}')}catch(e){}
+if(!Array.isArray(home.recs))home.recs=[];
+if(!rev||typeof rev!=='object')rev={};
 if(!Array.isArray(tasks))tasks=[];
 if(!['star','due','new','az'].includes(sort))sort='star';
 $('sort').value=sort;
 const save=()=>{try{localStorage.setItem('tickoff',JSON.stringify(tasks))}catch(e){}};
 const saveP=()=>{try{localStorage.setItem('tickoff-proj',JSON.stringify(projects))}catch(e){}};
 const saveC=()=>{try{localStorage.setItem('tickoff-car',JSON.stringify(car))}catch(e){}};
+const saveH=()=>{try{localStorage.setItem('tickoff-home',JSON.stringify(home))}catch(e){}};
+const tog=t=>{t.done=!t.done;t.doneAt=t.done?today:''};
 const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML};
 const nice=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})};
 const T=id=>tasks.find(x=>x.id===id);
@@ -177,13 +194,16 @@ function weekStart(){const d=new Date();d.setDate(d.getDate()-d.getDay()+wk*7);r
 function render(){
  const open=tasks.filter(t=>!t.done).length,dueN=tasks.filter(t=>!t.done&&t.due&&t.due<=today).length;
  $('count').textContent=tasks.length?open+' to do · '+dueN+' due today':'Nothing yet';
- ['today','week','list','cal','proj','car'].forEach(v=>$('v_'+v).className=view===v?'on':'');
+ ['today','week','list','cal','proj','car','home','rev'].forEach(v=>$('v_'+v).className=view===v?'on':'');
  $('calBox').classList.toggle('hide',view!=='cal');
  $('weekBox').classList.toggle('hide',view!=='week');
  $('sortBox').classList.toggle('hide',view!=='list');
- $('new').placeholder=view==='proj'?'Add a project…':view==='car'?'Add a service or repair…':'Add a task…';
+ $('addRow').classList.toggle('hide',view==='rev');
+ $('new').placeholder=view==='proj'?'Add a project…':view==='car'?'Add a service or repair…':view==='home'?'Add a repair or job…':'Add a task…';
  let h='';
- if(view==='car'){h=carHtml()}
+ if(view==='rev'){h=revHtml()}
+ else if(view==='home'){h=homeHtml()}
+ else if(view==='car'){h=carHtml()}
  else if(view==='proj'){h=projHtml()}
  else if(view==='list'){const s=ordered(tasks);h=s.length?s.map(row).join(''):'<div class="empty">All clear. Add your first task above.</div>'}
  else if(view==='today'){
@@ -213,17 +233,18 @@ function render(){
  $('tasks').innerHTML=h;
 }
 function add(){const v=$('new').value.trim();if(!v)return;
+ if(view==='home'){const r={id:Date.now().toString(36),date:today,work:v,who:'',cost:'',nextWhat:'',nextDate:''};home.recs.unshift(r);$('new').value='';saveH();openHome(r.id);return}
  if(view==='car'){const r={id:Date.now().toString(36),date:today,work:v,garage:'',cost:'',km:'',nextDate:'',nextKm:''};car.recs.unshift(r);$('new').value='';saveC();openCar(r.id);return}
  if(view==='proj'){const p={id:Date.now().toString(36),name:v,desc:'',status:'Active',due:'',notes:''};projects.unshift(p);$('new').value='';saveP();openProj(p.id);return}
  tasks.unshift({id:Date.now().toString(36),title:v,desc:'',done:false,star:false,subs:[],due:view==='cal'||view==='week'?sel:view==='today'?today:''});
  $('new').value='';save();render()}
 $('addBtn').onclick=add;$('new').onkeydown=e=>{if(e.key==='Enter')add()};
-['today','week','list','cal','proj','car'].forEach(v=>$('v_'+v).onclick=()=>{view=v;snz=null;pick=false;render()});
+['today','week','list','cal','proj','car','home','rev'].forEach(v=>$('v_'+v).onclick=()=>{view=v;snz=null;pick=false;render()});
 $('sort').onchange=()=>{sort=$('sort').value;try{localStorage.setItem('tickoff-sort',sort)}catch(e){}render()};
 $('main').onclick=e=>{
  const g=a=>e.target.closest('['+a+']');
- const k=g('data-tick'),o=g('data-open'),d=g('data-day'),n=g('data-nav'),s=g('data-star'),z=g('data-zz'),sn=g('data-snz'),fo=g('data-focus'),pk=g('data-pick'),w=g('data-wk'),wd=g('data-wday'),po=g('data-popen'),cr=g('data-copen');
- if(k){const t=T(k.dataset.tick);t.done=!t.done;save();render()}
+ const k=g('data-tick'),o=g('data-open'),d=g('data-day'),n=g('data-nav'),s=g('data-star'),z=g('data-zz'),sn=g('data-snz'),fo=g('data-focus'),pk=g('data-pick'),w=g('data-wk'),wd=g('data-wday'),po=g('data-popen'),cr=g('data-copen'),hr=g('data-hopen'),rwn=g('data-rw'),rmv=g('data-rmove'),rall=g('data-rall');
+ if(k){const t=T(k.dataset.tick);tog(t);save();render()}
  else if(s){const t=T(s.dataset.star);t.star=!t.star;save();render()}
  else if(z){snz=z.dataset.zz;render()}
  else if(sn){const[id,dd]=sn.dataset.snz.split(':');if(dd!=='x'){T(id).due=addDays(Number(dd));save()}snz=null;render()}
@@ -233,6 +254,10 @@ $('main').onclick=e=>{
  else if(wd){sel=wd.dataset.wday;render()}
  else if(po){openProj(po.dataset.popen)}
  else if(cr){openCar(cr.dataset.copen)}
+ else if(hr){openHome(hr.dataset.hopen)}
+ else if(rwn){rw+=Number(rwn.dataset.rw);render()}
+ else if(rmv){T(rmv.dataset.rmove).due=nextMon();save();render()}
+ else if(rall){revNot(rw).forEach(t=>t.due=nextMon());save();render()}
  else if(o){snz=null;openTask(o.dataset.open)}
  else if(d){sel=d.dataset.day;render()}
  else if(n){month=new Date(month.getFullYear(),month.getMonth()+Number(n.dataset.nav),1);render()}};
@@ -266,7 +291,7 @@ function close(){if(cur){cur.title=$('dTitle').value.trim()||cur.title;cur.desc=
   if(cur.due&&view==='cal'){sel=cur.due;const[y,m]=cur.due.split('-').map(Number);month=new Date(y,m-1,1)}save()}
  cur=null;$('detail').classList.add('hide');if(backP&&curP){$('pdetail').classList.remove('hide');drawProj()}else{$('main').classList.remove('hide');render()}}
 $('back').onclick=close;
-$('dDone').onclick=()=>{cur.done=!cur.done;close()};
+$('dDone').onclick=()=>{tog(cur);close()};
 $('dDel').onclick=()=>{if(!armed){armed=true;$('dDel').textContent='Tap again to delete';return}armed=false;$('dDel').textContent='Delete';(cur.atts||[]).forEach(f=>delF(f.id).catch(()=>{}));tasks=tasks.filter(x=>x!==cur);cur=null;save();close()};
 function projHtml(){
  if(!projects.length)return '<div class="empty">No projects yet. Type a name above and tap Add.</div>';
@@ -282,7 +307,7 @@ function saveProj(){if(!curP)return;curP.name=$('pName').value.trim()||curP.name
 function closeProj(){saveProj();curP=null;$('pdetail').classList.add('hide');$('main').classList.remove('hide');render()}
 $('pBack').onclick=closeProj;
 $('pdetail').onclick=e=>{if(attClick(e))return;const g=a=>e.target.closest('['+a+']');const k=g('data-tick'),s=g('data-star'),o=g('data-open'),z=g('data-zz'),sn=g('data-snz');
- if(k){const t=T(k.dataset.tick);t.done=!t.done;save();drawProj()}
+ if(k){const t=T(k.dataset.tick);tog(t);save();drawProj()}
  else if(s){const t=T(s.dataset.star);t.star=!t.star;save();drawProj()}
  else if(z){snz=z.dataset.zz;drawProj()}
  else if(sn){const[id,dd]=sn.dataset.snz.split(':');if(dd!=='x'){T(id).due=addDays(Number(dd));save()}snz=null;drawProj()}
@@ -296,14 +321,14 @@ const idb=async(mode,fn)=>{const d=await dbp;if(!d)throw new Error('nodb');retur
 const putF=(id,b)=>idb('readwrite',s=>s.put(b,id)),getF=id=>idb('readonly',s=>s.get(id)),delF=id=>idb('readwrite',s=>s.delete(id));
 async function shrink(f){if(!f.type.startsWith('image/')||f.type==='image/gif')return f;
  try{const b=await createImageBitmap(f),sc=Math.min(1,1600/Math.max(b.width,b.height)),c=document.createElement('canvas');c.width=Math.round(b.width*sc);c.height=Math.round(b.height*sc);c.getContext('2d').drawImage(b,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(x=>r(x||f),'image/jpeg',.85))}catch(e){return f}}
-const attHtml=p=>`<div class="chips"><button class="mini" data-copy="${p}">Copy text</button></div><div id="${p}Links"></div><label>${p==='c'?'Invoice, photos &amp; files':'Photos &amp; files'}</label><div id="${p}Atts"></div><div class="chips"><button class="mini" data-add="${p}:Photo">+ Photo</button><button class="mini" data-add="${p}:File">+ File</button></div><input type="file" id="${p}Photo" accept="image/*" multiple class="hide"><input type="file" id="${p}File" multiple class="hide"><div class="flash" id="${p}Msg"></div>`;
-$('dAttBox').innerHTML=attHtml('d');$('pAttBox').innerHTML=attHtml('p');$('cAttBox').innerHTML=attHtml('c');
-const owner=p=>p==='d'?cur:p==='c'?curC:curP,saveAll=p=>p==='d'?save():p==='c'?saveC():saveP();
+const attHtml=p=>`<div class="chips"><button class="mini" data-copy="${p}">Copy text</button></div><div id="${p}Links"></div><label>${p==='c'?'Invoice, photos &amp; files':p==='h'?'Receipts, photos &amp; files':'Photos &amp; files'}</label><div id="${p}Atts"></div><div class="chips"><button class="mini" data-add="${p}:Photo">+ Photo</button><button class="mini" data-add="${p}:File">+ File</button></div><input type="file" id="${p}Photo" accept="image/*" multiple class="hide"><input type="file" id="${p}File" multiple class="hide"><div class="flash" id="${p}Msg"></div>`;
+$('dAttBox').innerHTML=attHtml('d');$('pAttBox').innerHTML=attHtml('p');$('cAttBox').innerHTML=attHtml('c');$('hAttBox').innerHTML=attHtml('h');
+const owner=p=>p==='d'?cur:p==='c'?curC:p==='h'?curH:curP,saveAll=p=>p==='d'?save():p==='c'?saveC():p==='h'?saveH():saveP();
 let mt;const msg=(p,t)=>{$(p+'Msg').textContent=t;clearTimeout(mt);mt=setTimeout(()=>$(p+'Msg').textContent='',2500)};
 const URLs={};
 function drawLinks(p){const t=$(p+'Desc').value+(p==='p'?' '+$('pNotes').value:''),u=[...new Set(t.match(/https?:\/\/[^\s<>"']+/g)||[])];
  $(p+'Links').innerHTML=u.length?'<div class="chips">'+u.map(x=>`<a class="lnk" href="${esc(x)}" target="_blank" rel="noopener">${esc(x.replace(/^https?:\/\//,'').slice(0,34))}</a>`).join('')+'</div>':''}
-['dDesc','pDesc','pNotes','cDesc'].forEach(id=>$(id).addEventListener('input',()=>drawLinks(id[0])));
+['dDesc','pDesc','pNotes','cDesc','hDesc'].forEach(id=>$(id).addEventListener('input',()=>drawLinks(id[0])));
 async function drawAtts(p){const o=owner(p),box=$(p+'Atts');if(!o)return;const a=o.atts||[];
  box.innerHTML=a.map((f,i)=>`<div class="att" data-att="${p}:${i}">${f.type.startsWith('image/')?`<img alt="" data-img="${f.id}">`:'<span class="fi">▤</span>'}<span class="an">${esc(f.name)}</span><button class="x" data-rm="${p}:${i}" aria-label="Remove">×</button></div>`).join('');
  for(const f of a){if(!f.type.startsWith('image/'))continue;try{const b=await getF(f.id);if(b){const u=URLs[f.id]||(URLs[f.id]=URL.createObjectURL(b)),im=box.querySelector(`[data-img="${f.id}"]`);if(im)im.src=u}}catch(e){}}}
@@ -318,7 +343,7 @@ async function attAct(k,el){
  try{const b=await getF(f.id);if(!b){msg(p,'File not found');return}const u=URL.createObjectURL(b);
   if(f.type.startsWith('image/')||f.type==='application/pdf')window.open(u,'_blank');
   else{const a=document.createElement('a');a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove()}}catch(_){msg(p,'Could not open file')}}
-['d','p','c'].forEach(p=>['Photo','File'].forEach(t=>{$(p+t).onchange=async e=>{const o=owner(p);if(!o)return;o.atts=o.atts||[];
+['d','p','c','h'].forEach(p=>['Photo','File'].forEach(t=>{$(p+t).onchange=async e=>{const o=owner(p);if(!o)return;o.atts=o.atts||[];
  for(const f0 of e.target.files){try{const b=t==='Photo'?await shrink(f0):f0,id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);await putF(id,b);o.atts.push({id,name:f0.name||'photo.jpg',type:b.type||f0.type||'application/octet-stream',size:b.size})}catch(_){msg(p,'Could not save '+(f0.name||'file'))}}
  e.target.value='';saveAll(p);drawAtts(p)}}));
 
@@ -354,6 +379,50 @@ $('cShare').onclick=async()=>{saveCar();const r=curC,text=[r.work,nicey(r.date),
   if(navigator.canShare&&files.length&&navigator.canShare({files}))await navigator.share({title:car.name+' service',text,files});
   else if(navigator.share)await navigator.share({title:car.name+' service',text});
   else{await navigator.clipboard.writeText(text);msg('c','Details copied')}}catch(e){}};
+
+const wkRange=o=>{const d=new Date();d.setDate(d.getDate()-d.getDay()+o*7);const e=new Date(d);e.setDate(d.getDate()+6);return[ymd(d),ymd(e)]};
+const fm=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString(undefined,{month:'short',day:'numeric'})};
+const nextMon=()=>addDays((8-new Date().getDay())%7||7);
+const revNot=o=>{const b=wkRange(o)[1];return tasks.filter(t=>!t.done&&t.due&&t.due<=b)};
+function revHtml(){
+ const[a,b]=wkRange(rw),done=tasks.filter(t=>t.done&&t.doneAt&&t.doneAt>=a&&t.doneAt<=b),nd=revNot(rw);
+ const[na,nb]=wkRange(1),[y,m,d]=na.split('-').map(Number),mon=ymd(new Date(y,m-1,d+1)),nw=tasks.filter(t=>!t.done&&t.due&&t.due>=na&&t.due<=nb);
+ let h=`<div class="mh"><button data-rw="-1" aria-label="Previous week">‹</button><b>${fm(a)} – ${fm(b)}${rw===0?' · this week':''}</b><button data-rw="1" aria-label="Next week">›</button></div><div class="card"><div class="stats" style="margin-top:0"><div><b>${done.length}</b><span>done</span></div><div><b style="color:#9a3b2e">${nd.length}</b><span>not done</span></div></div></div>`;
+ h+=sec('Finished')+(done.length?done.slice(0,5).map(t=>`<div class="task done"><span class="box" style="display:inline-block;text-align:center;line-height:22px;cursor:default">✓</span><span class="title">${esc(t.title)}</span></div>`).join('')+(done.length>5?`<div class="empty" style="padding:8px">+ ${done.length-5} more finished</div>`:''):'<div class="empty">Nothing ticked off this week yet.</div>');
+ h+=sec('Not done ('+nd.length+')')+nd.map(t=>`<div class="task ${t.due<today?'late':''}"><span class="title" data-open="${t.id}">${esc(t.title)}<span class="due">${t.due<today?'Overdue · ':''}${nice(t.due)}</span></span><button class="zz" data-rmove="${t.id}">Next week</button></div>`).join('');
+ h+=nd.length?`<button class="btn" style="width:100%;min-height:48px;margin-top:12px" data-rall="1">Move all ${nd.length} to next week</button>`:'<div class="empty">Everything due is done.</div>';
+ h+=`<div class="nx">Next week already has ${nw.length} task${nw.length===1?'':'s'} · ${nw.filter(t=>t.due===mon).length} due Monday</div><label>Notes for this week</label><textarea id="revNote" placeholder="What went well? What to change?">${esc(rev[a]||'')}</textarea>`;
+ return h}
+$('tasks').addEventListener('input',e=>{if(e.target.id==='revNote'){rev[wkRange(rw)[0]]=e.target.value;try{localStorage.setItem('tickoff-rev',JSON.stringify(rev))}catch(_){}}});
+function homeHtml(){
+ const rs=[...home.recs].sort((a,b)=>(b.date||'').localeCompare(a.date||'')),yr=today.slice(0,4),sum=a=>a.reduce((s,r)=>s+(Number(r.cost)||0),0);
+ const nx=rs.find(r=>r.nextDate),late=nx&&nx.nextDate<today;
+ let h=`<div class="card"><input id="homeName" value="${esc(home.name).replace(/"/g,'&quot;')}" maxlength="40" aria-label="Home name"><div class="stats"><div><b>${rs.length}</b><span>jobs</span></div><div><b>${money(sum(rs.filter(r=>(r.date||'').startsWith(yr))))}</b><span>this year</span></div><div><b>${money(sum(rs))}</b><span>total</span></div></div>`;
+ if(nx)h+=`<div class="nx" style="${late?'color:#9a3b2e':''}">Next: ${nx.nextWhat?esc(nx.nextWhat)+' · ':''}${late?'overdue · ':''}${nicey(nx.nextDate)}</div>`;
+ h+='</div>';
+ if(!rs.length)return h+'<div class="empty">No jobs yet. Type what was done above and tap Add.</div>';
+ return h+rs.map(r=>{const n=(r.atts||[]).length;return `<div class="task" data-hopen="${r.id}" style="cursor:pointer"><span class="title">${esc((r.work||'Job').split('\n')[0])}<span class="due">${[nicey(r.date),r.who,r.cost?money(r.cost):'',n?n+' attached':''].filter(Boolean).map(esc).join(' · ')}</span></span><span class="chev">›</span></div>`}).join('')}
+$('tasks').addEventListener('change',e=>{if(e.target.id==='homeName'){home.name=e.target.value.trim()||'My house';saveH()}});
+function hGcal(){const v=$('hNextDate').value,a=$('hGcal');if(!v){a.classList.add('hide');return}
+ const[y,m,d]=v.split('-').map(Number),nx=new Date(y,m-1,d+1),f=s=>s.replace(/-/g,'');
+ a.href='https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(home.name+': '+($('hNextWhat').value||'next job'))+'&details='+encodeURIComponent($('hDesc').value)+'&dates='+f(v)+'/'+f(ymd(nx));a.classList.remove('hide')}
+$('hNextDate').onchange=hGcal;
+function openHome(id){curH=home.recs.find(r=>r.id===id);if(!curH)return;armedH=false;$('hDel').textContent='Delete';curH.atts=curH.atts||[];
+ $('hDate').value=curH.date||'';$('hDesc').value=curH.work||'';$('hWho').value=curH.who||'';$('hCost').value=curH.cost||'';$('hNextWhat').value=curH.nextWhat||'';$('hNextDate').value=curH.nextDate||'';
+ $('whos').innerHTML=[...new Set(home.recs.map(r=>r.who).filter(Boolean))].map(g=>`<option value="${esc(g).replace(/"/g,'&quot;')}">`).join('');
+ $('hTitleH').textContent=(curH.work||'Job').split('\n')[0].slice(0,40);
+ hGcal();drawAtts('h');drawLinks('h');
+ $('main').classList.add('hide');$('hdetail').classList.remove('hide');window.scrollTo(0,0)}
+function saveHome(){if(!curH)return;curH.date=$('hDate').value;curH.work=$('hDesc').value.trim()||curH.work||'Job';curH.who=$('hWho').value.trim();curH.cost=$('hCost').value;curH.nextWhat=$('hNextWhat').value.trim();curH.nextDate=$('hNextDate').value;saveH()}
+function closeHome(){saveHome();curH=null;$('hdetail').classList.add('hide');$('main').classList.remove('hide');render()}
+$('hBack').onclick=closeHome;
+$('hdetail').onclick=e=>{attClick(e)};
+$('hDel').onclick=()=>{if(!armedH){armedH=true;$('hDel').textContent='Tap again to delete';return}(curH.atts||[]).forEach(f=>delF(f.id).catch(()=>{}));home.recs=home.recs.filter(r=>r!==curH);curH=null;saveH();$('hdetail').classList.add('hide');$('main').classList.remove('hide');render()};
+$('hShare').onclick=async()=>{saveHome();const r=curH,text=[r.work,nicey(r.date),r.who?'By: '+r.who:'',r.cost?'Cost: '+money(r.cost):''].filter(Boolean).join('\n');
+ try{const files=[];for(const f of r.atts||[]){const b=await getF(f.id);if(b)files.push(new File([b],f.name,{type:f.type}))}
+  if(navigator.canShare&&files.length&&navigator.canShare({files}))await navigator.share({title:home.name+' job',text,files});
+  else if(navigator.share)await navigator.share({title:home.name+' job',text});
+  else{await navigator.clipboard.writeText(text);msg('h','Details copied')}}catch(e){}};
 render();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script></body></html>
