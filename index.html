@@ -74,12 +74,30 @@ label{display:block;color:var(--mute);font-size:13px;margin:12px 0 5px;text-tran
 .att{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dotted var(--gold);cursor:pointer}.att img{width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--gold)}.att .an{flex:1;overflow-wrap:anywhere;font-size:15px}.fi{font-size:28px;width:56px;text-align:center;color:var(--gold)}
 .lnk{color:var(--ink);border-bottom:1.5px solid var(--gold);text-decoration:none;font-size:14px}
 .card{border:1.5px solid var(--gold);border-radius:10px;padding:12px;margin-bottom:8px}.stats{display:flex;gap:8px;margin-top:10px;text-align:center}.stats div{flex:1}.stats b{display:block;font-size:18px}.stats span{font-size:12px;color:var(--mute)}.nx{margin-top:10px;font-size:14px}
+.segw{position:relative;margin-bottom:12px}.segw .seg{margin-bottom:0;position:relative}
+.segw::after{content:'';position:absolute;top:1.5px;right:1.5px;bottom:1.5px;width:34px;pointer-events:none;background:linear-gradient(to right,rgba(255,250,244,0),#fffaf4);border-radius:0 8px 8px 0}.segw.end::after{display:none}
+.frame{position:relative}
+.gear{position:absolute;top:6px;right:4px;width:44px;height:44px;border:0;background:none;color:var(--ink);padding:0;display:flex;align-items:center;justify-content:center}
+.fab{position:fixed;right:18px;bottom:calc(22px + env(safe-area-inset-bottom,0px));width:60px;height:60px;border-radius:30px;border:0;background:var(--ink);box-shadow:0 4px 12px rgba(26,26,26,.3);display:flex;align-items:center;justify-content:center;z-index:20;padding:0}
+.ovl{position:fixed;inset:0;background:rgba(26,26,26,.38);z-index:50;display:flex;align-items:flex-end}
+.sheet{width:100%;max-width:520px;margin:0 auto;background:var(--card);border-top:2px solid var(--gold);border-radius:20px 20px 0 0;padding:12px 16px calc(20px + env(safe-area-inset-bottom,0px));max-height:92vh;overflow:auto}
+.grab{width:44px;height:5px;border-radius:3px;background:var(--gold);margin:0 auto 12px}
+.chp{min-height:44px;padding:0 16px;border-radius:22px;border:1.5px solid var(--gold);background:none;color:var(--ink);font-size:15px}.chp.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.wrapc{display:flex;flex-wrap:wrap;gap:8px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:100px;background:var(--ink);color:var(--card);padding:10px 16px;border-radius:20px;z-index:80;font-size:15px}
+#pin{position:fixed;inset:0;background:var(--bg);z-index:100;overflow:auto;display:flex;flex-direction:column;align-items:center;padding:30px 16px}
+#pin.hide{display:none}
+.dots{display:flex;gap:16px;margin:22px 0 26px}.dots span{width:16px;height:16px;border-radius:8px;border:2px solid var(--gold)}.dots span.f{background:var(--ink);border-color:var(--ink)}
+.pad{display:grid;grid-template-columns:repeat(3,72px);gap:14px 22px;justify-content:center}
+.pad button{width:72px;height:72px;border-radius:36px;border:1.5px solid var(--gold);background:none;font-size:28px;color:var(--ink);padding:0}.pad .nb{border:0}
+.linkb{background:none;border:0;color:var(--ink);font-size:15px;margin-top:18px;border-bottom:1.5px solid var(--gold);padding:0 0 2px}
+.up{display:flex;align-items:center;gap:10px;min-height:46px;border-bottom:1px dotted var(--gold);cursor:pointer}.up .d{flex:none;width:62px;font-size:13px;color:var(--mute)}.up .t{flex:1;font-size:16px}.up .n{font-size:12px;color:var(--mute)}
 .hide{display:none}
 </style></head><body>
 <div class="wrap"><div class="frame">
 <div id="main">
- <header><div class="logo"><img src="icon-192.png" alt="My Brain"></div><h1>My Brain</h1><div class="sub0" id="count"></div></header>
- <div class="seg"><button id="v_today">Today</button><button id="v_week">Week</button><button id="v_list">List</button><button id="v_cal">Month</button><button id="v_proj">Projects</button><button id="v_car">Car</button><button id="v_home">Home</button><button id="v_rev">Review</button></div>
+ <button class="gear" id="gear" aria-label="Settings"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/></svg></button><header><div class="logo"><img src="icon-192.png" alt="My Brain"></div><h1>My Brain</h1><div class="sub0" id="count"></div></header>
+ <div class="segw"><div class="seg"><button id="v_today">Today</button><button id="v_week">Week</button><button id="v_list">List</button><button id="v_cal">Month</button><button id="v_proj">Projects</button><button id="v_car">Car</button><button id="v_home">Home</button><button id="v_rev">Review</button></div></div>
  <div id="sortBox" class="sortrow hide">Sort by
   <select id="sort"><option value="star">Priority first</option><option value="due">Due date</option><option value="new">Newest</option><option value="az">A–Z</option></select></div>
  <div id="weekBox" class="hide"><div class="mh"><button data-wk="-1" aria-label="Previous week">‹</button><b id="wTitle"></b><button data-wk="1" aria-label="Next week">›</button></div></div>
@@ -148,6 +166,19 @@ label{display:block;color:var(--mute);font-size:13px;margin:12px 0 5px;text-tran
  <div class="row"><button id="hShare">Share</button><button class="del" id="hDel">Delete</button></div>
 </div>
 </div></div>
+<button class="fab" id="fab" aria-label="Quick add"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c9a15a" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+<div id="qa" class="ovl hide"><div class="sheet"><div class="grab"></div><h2 style="margin:0">Quick add</h2>
+<div class="wrapc" style="margin:12px 0"><button class="chp" data-qt="task">Task</button><button class="chp" data-qt="car">Car</button><button class="chp" data-qt="home">Home</button><button class="chp" data-qt="project">Project</button></div>
+<div class="add"><input id="qaText" placeholder="What’s on your mind?" maxlength="120"><button class="pri" id="qaMic" aria-label="Speak" style="width:52px;padding:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button></div>
+<div id="qaWhen"><label>When</label><div class="wrapc"><button class="chp" data-qw="none">No date</button><button class="chp" data-qw="today">Today</button><button class="chp" data-qw="tomorrow">Tomorrow</button><button class="chp" data-qw="week">Next week</button><button class="chp" data-qw="pick">Pick date</button></div><input id="qaDate" type="date" class="hide" style="margin-top:8px"></div>
+<div id="qaOpts" class="wrapc" style="margin-top:12px"><button class="chp" id="qPri">☆ Priority</button><button class="chp" id="qFoc">Focus today</button></div>
+<div class="flash" id="qaMsg"></div>
+<button class="btn" id="qaAdd" style="width:100%;min-height:52px;margin-top:14px;font-size:17px">Add</button></div></div>
+<div id="st" class="ovl hide"><div class="sheet"><div class="grab"></div><h2 style="margin:0 0 8px">Settings</h2><label style="margin-top:4px">PIN lock</label><div id="stPin"></div>
+<div class="nx" style="font-size:12px;color:var(--mute)">A PIN hides the app on this phone. It does not encrypt your data, and a forgotten PIN can only be cleared by erasing the app’s data.</div>
+<button class="btn" id="stClose" style="width:100%;min-height:48px;margin-top:14px">Close</button></div></div>
+<div id="toast" class="toast hide"></div>
+<div id="pin" class="hide"><div class="logo"><img id="pinImg" alt=""></div><h1 id="pinTitle">My Brain</h1><div class="sub0" id="pinSub">Enter your PIN</div><div class="dots" id="pinDots"></div><div class="pad" id="pinPad"></div><div class="flash" id="pinMsg" style="margin-top:14px;text-align:center;max-width:300px"></div><button class="linkb" id="pinForgot">Forgot PIN?</button><button class="linkb hide" id="pinCancel">Cancel</button></div>
 <script>
 const $=id=>document.getElementById(id);
 const pad=n=>String(n).padStart(2,'0');
@@ -195,6 +226,7 @@ function render(){
  const open=tasks.filter(t=>!t.done).length,dueN=tasks.filter(t=>!t.done&&t.due&&t.due<=today).length;
  $('count').textContent=tasks.length?open+' to do · '+dueN+' due today':'Nothing yet';
  ['today','week','list','cal','proj','car','home','rev'].forEach(v=>$('v_'+v).className=view===v?'on':'');
+ {const b=$('v_'+view),s=b.parentElement;if(b.offsetParent)s.scrollLeft=b.offsetLeft-(s.clientWidth-b.offsetWidth)/2}
  $('calBox').classList.toggle('hide',view!=='cal');
  $('weekBox').classList.toggle('hide',view!=='week');
  $('sortBox').classList.toggle('hide',view!=='list');
@@ -213,6 +245,7 @@ function render(){
    const rest=ordered(tasks.filter(t=>!t.done&&t.due&&t.due<=today&&t.focus!==today));
    h=sec('Today’s focus','<button class="mini" data-pick="1">Choose</button>')+(foc.length?foc.map(row).join(''):`<div class="empty">${fdone?'Focus tasks all done.':'Choose tasks to focus on today.'}</div>`);
    if(rest.length)h+=sec('Due & overdue')+rest.map(row).join('');
+   h+=upHtml();
   }}
  else if(view==='week'){
   const st=weekStart(),days=[...Array(7)].map((_,i)=>{const d=new Date(st);d.setDate(st.getDate()+i);return d});
@@ -423,6 +456,75 @@ $('hShare').onclick=async()=>{saveHome();const r=curH,text=[r.work,nicey(r.date)
   if(navigator.canShare&&files.length&&navigator.canShare({files}))await navigator.share({title:home.name+' job',text,files});
   else if(navigator.share)await navigator.share({title:home.name+' job',text});
   else{await navigator.clipboard.writeText(text);msg('h','Details copied')}}catch(e){}};
+
+const dn=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+function upHtml(){
+ const lim=addDays(14),lim30=addDays(30),a=[],byDate=(x,y)=>(y.date||'').localeCompare(x.date||'');
+ tasks.filter(t=>!t.done&&t.due&&t.due>today&&t.due<=lim).forEach(t=>a.push({d:t.due,t:t.title,a:`data-open="${t.id}"`}));
+ const nc=[...car.recs].sort(byDate).find(r=>r.nextDate),nh=[...home.recs].sort(byDate).find(r=>r.nextDate);
+ if(nc&&nc.nextDate<=lim30)a.push({d:nc.nextDate,t:'Car: next service',a:`data-copen="${nc.id}"`});
+ if(nh&&nh.nextDate<=lim30)a.push({d:nh.nextDate,t:'Home: '+(nh.nextWhat||'next job'),a:`data-hopen="${nh.id}"`});
+ if(!a.length)return '';
+ a.sort((x,y)=>x.d.localeCompare(y.d));
+ return sec('Coming up')+a.slice(0,6).map(x=>{const n=Math.round((dn(x.d)-dn(today))/864e5);return `<div class="up" ${x.a}><span class="d">${fm(x.d)}</span><span class="t">${esc(x.t)}</span><span class="n">${n<0?'overdue':n===1?'tomorrow':'in '+n+' days'}</span></div>`}).join('')}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,4);
+let tt;const toast=m=>{const t=$('toast');t.textContent=m;t.classList.remove('hide');clearTimeout(tt);tt=setTimeout(()=>t.classList.add('hide'),2200)};
+new MutationObserver(()=>$('fab').classList.toggle('hide',$('main').classList.contains('hide'))).observe($('main'),{attributes:true,attributeFilter:['class']});
+{const s=document.querySelector('.seg'),w=s.parentElement,f=()=>w.classList.toggle('end',s.scrollLeft+s.clientWidth>=s.scrollWidth-4);s.addEventListener('scroll',f);f()}
+let qt='task',qwhen='today',qpri=false,qfoc=false;
+function qaDraw(){document.querySelectorAll('[data-qt]').forEach(b=>b.classList.toggle('on',b.dataset.qt===qt));document.querySelectorAll('[data-qw]').forEach(b=>b.classList.toggle('on',b.dataset.qw===qwhen));
+ $('qaDate').classList.toggle('hide',qwhen!=='pick');$('qaWhen').classList.toggle('hide',qt!=='task');$('qaOpts').classList.toggle('hide',qt!=='task');$('qPri').classList.toggle('on',qpri);$('qFoc').classList.toggle('on',qfoc)}
+const qaClose=()=>$('qa').classList.add('hide');
+$('fab').onclick=()=>{qt=view==='car'?'car':view==='home'?'home':view==='proj'?'project':'task';qwhen=view==='list'?'none':'today';qpri=false;qfoc=false;$('qaText').value='';$('qaMsg').textContent='';qaDraw();$('qa').classList.remove('hide');setTimeout(()=>$('qaText').focus(),60)};
+$('qa').onclick=e=>{const t=e.target;if(t===$('qa')){qaClose();return}const a=t.closest('[data-qt]'),b=t.closest('[data-qw]');
+ if(a){qt=a.dataset.qt;qaDraw()}else if(b){qwhen=b.dataset.qw;qaDraw()}else if(t.closest('#qPri')){qpri=!qpri;qaDraw()}else if(t.closest('#qFoc')){qfoc=!qfoc;qaDraw()}};
+$('qaDate').onchange=()=>{qwhen='pick';qaDraw()};
+$('qaText').onkeydown=e=>{if(e.key==='Enter')qaAdd()};
+$('qaAdd').onclick=()=>qaAdd();
+function qaAdd(){const v=$('qaText').value.trim();if(!v){$('qaMsg').textContent='Type something first.';return}
+ if(qt==='task'){const due=qwhen==='today'?today:qwhen==='tomorrow'?addDays(1):qwhen==='week'?nextMon():qwhen==='pick'?$('qaDate').value:'';
+  tasks.unshift({id:uid(),title:v,desc:'',done:false,star:qpri,subs:[],due,focus:qfoc?today:''});save();toast('Task added')}
+ else if(qt==='car'){car.recs.unshift({id:uid(),date:today,work:v,garage:'',cost:'',km:'',nextDate:'',nextKm:''});saveC();toast('Added to Car')}
+ else if(qt==='home'){home.recs.unshift({id:uid(),date:today,work:v,who:'',cost:'',nextWhat:'',nextDate:''});saveH();toast('Added to Home')}
+ else{projects.unshift({id:uid(),name:v,desc:'',status:'Active',due:'',notes:''});saveP();toast('Project added')}
+ qaClose();render()}
+$('qaMic').onclick=()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){$('qaMsg').textContent='Voice is not available here. Use the microphone on your keyboard.';return}
+ try{const r=new SR();r.lang=navigator.language||'en-US';r.onresult=e=>{$('qaText').value=e.results[0][0].transcript;$('qaMsg').textContent=''};r.onerror=()=>{$('qaMsg').textContent='Could not hear you.'};r.start();$('qaMsg').textContent='Listening…'}catch(e){$('qaMsg').textContent='Voice is not available here.'}};
+let pinRec=null,pinBuf='',pinCb=null,pinBusy=false,fails=0,until=0,forgot=false,hiddenAt=0;
+try{pinRec=JSON.parse(localStorage.getItem('tickoff-pin')||'null')}catch(e){}
+$('pinImg').src=document.querySelector('.logo img').src;
+$('pinPad').innerHTML=['1','2','3','4','5','6','7','8','9','','0','b'].map(k=>k===''?'<span></span>':`<button class="${k==='b'?'nb':''}" data-k="${k}" aria-label="${k==='b'?'Delete digit':k}">${k==='b'?'←':k}</button>`).join('');
+const pinDots=()=>$('pinDots').innerHTML=[0,1,2,3].map(i=>`<span class="${i<pinBuf.length?'f':''}"></span>`).join('');
+async function hashPin(p,salt){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(salt+':'+p));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}catch(e){let h=0;for(const c of salt+p)h=(h*31+c.charCodeAt(0))|0;return 'x'+h}}
+function askPin(title,sub,cb,cancel){pinBuf='';pinCb=cb;pinBusy=false;forgot=false;$('pinTitle').textContent=title;$('pinSub').textContent=sub;$('pinMsg').textContent='';pinDots();$('pinForgot').classList.toggle('hide',!!cancel);$('pinCancel').classList.toggle('hide',!cancel);$('pin').classList.remove('hide')}
+async function pinKey(k){if(pinBusy)return;if(k==='b')pinBuf=pinBuf.slice(0,-1);else if(pinBuf.length<4)pinBuf+=k;pinDots();
+ if(pinBuf.length===4){pinBusy=true;const p=pinBuf;await new Promise(r=>setTimeout(r,120));pinBuf='';pinDots();try{await pinCb(p)}finally{pinBusy=false}}}
+$('pinPad').onclick=e=>{const b=e.target.closest('[data-k]');if(b)pinKey(b.dataset.k)};
+$('pinCancel').onclick=()=>$('pin').classList.add('hide');
+function lockNow(){askPin('My Brain','Enter your PIN',async p=>{
+ if(Date.now()<until){$('pinMsg').textContent='Too many tries. Please wait a moment.';return}
+ if(await hashPin(p,pinRec.salt)===pinRec.hash){fails=0;$('pin').classList.add('hide')}
+ else{fails++;$('pinMsg').textContent='Wrong PIN';if(fails>=5){until=Date.now()+30000;fails=0;$('pinMsg').textContent='Too many tries. Wait 30 seconds.'}}})}
+$('pinForgot').onclick=()=>{if(!forgot){forgot=true;$('pinMsg').textContent='Forgot PIN erases ALL tasks, projects, car, home and files on this device. Tap again to confirm.';return}
+ try{Object.keys(localStorage).filter(k=>k.startsWith('tickoff')).forEach(k=>localStorage.removeItem(k))}catch(e){}
+ try{indexedDB.deleteDatabase('mybrain-files')}catch(e){}
+ setTimeout(()=>location.reload(),300)};
+function verifyPin(next){askPin('Enter current PIN','',async p=>{if(await hashPin(p,pinRec.salt)===pinRec.hash){$('pin').classList.add('hide');next()}else $('pinMsg').textContent='Wrong PIN'},true)}
+function setPin(){askPin('Choose a PIN','Pick 4 digits',p1=>{askPin('Confirm PIN','Enter the same 4 digits',async p2=>{
+ if(p1!==p2){$('pinMsg').textContent='They did not match. Cancel and try again.';return}
+ const salt=Math.random().toString(36).slice(2);pinRec={salt,hash:await hashPin(p1,salt)};try{localStorage.setItem('tickoff-pin',JSON.stringify(pinRec))}catch(e){}
+ $('pin').classList.add('hide');drawSettings();toast('PIN set')},true)},true)}
+function drawSettings(){$('stPin').innerHTML=pinRec?'<div class="nx">PIN lock is on.</div><div class="wrapc" style="margin-top:8px"><button class="chp" id="stChange">Change PIN</button><button class="chp" id="stRemove">Remove PIN</button><button class="chp" id="stLock">Lock now</button></div>':'<div class="nx">No PIN set.</div><div class="wrapc" style="margin-top:8px"><button class="chp" id="stSet">Set PIN</button></div>'}
+$('gear').onclick=()=>{drawSettings();$('st').classList.remove('hide')};
+$('st').onclick=e=>{const id=e.target.id,hide=()=>$('st').classList.add('hide');
+ if(e.target===$('st')||id==='stClose')hide();
+ else if(id==='stSet'){hide();setPin()}
+ else if(id==='stChange'){hide();verifyPin(setPin)}
+ else if(id==='stRemove'){hide();verifyPin(()=>{pinRec=null;try{localStorage.removeItem('tickoff-pin')}catch(e){}toast('PIN removed')})}
+ else if(id==='stLock'){hide();lockNow()}};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)hiddenAt=Date.now();else if(pinRec&&hiddenAt&&Date.now()-hiddenAt>60000&&$('pin').classList.contains('hide'))lockNow()});
 render();
+if(pinRec)lockNow();
+drawSettings();qaDraw();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script></body></html>
