@@ -106,7 +106,8 @@ label{display:block;color:var(--mute);font-size:13px;margin:12px 0 5px;text-tran
 </style></head><body>
 <div class="wrap" id="wrapEl"><div class="frame">
 <div id="main">
- <div class="topbar"><div class="tlogo"><img src="__ICON__" alt=""></div><div id="ttl">Today</div><div id="tdate"></div><button class="gear" id="gear" aria-label="Settings"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/></svg></button></div>
+ <div id="hero" style="text-align:center;margin-bottom:4px"><div class="logo" style="width:84px;height:84px"><img src="icon-192.png" alt="My Brain"></div><div style="font-size:26px;font-weight:bold;letter-spacing:.5px;margin-top:6px">My Brain</div></div>
+ <div class="topbar"><div class="tlogo"><img src="icon-192.png" alt=""></div><div id="ttl">Today</div><div id="tdate"></div><button class="gear" id="gear" aria-label="Settings"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/></svg></button></div>
  <div id="subSeg" class="seg hide"></div>
  
  <div id="sortBox" class="sortrow hide">Sort by
@@ -238,6 +239,7 @@ const sec=(a,b='')=>`<div class="sec"><span>${a}</span>${b}</div>`;
 function weekStart(){const d=new Date();d.setDate(d.getDate()-d.getDay()+wk*7);return d}
 function render(){
  $('ttl').textContent={today:'Today',rev:'Weekly review',list:'Tasks',proj:'Tasks',week:'Calendar',cal:'Calendar',car:'Logs',home:'Logs'}[view];
+ $('hero').classList.toggle('hide',view!=='today');document.querySelector('.tlogo').classList.toggle('hide',view==='today');
  $('tdate').textContent=view==='today'?new Date().toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'}):'';
  {const g=tabOf(view);if(g!=='today')last[g]=view;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===g));const grp=SUBS[g];$('subSeg').classList.toggle('hide',!grp);if(grp)$('subSeg').innerHTML=grp.map(([v,n])=>`<button class="${view===v?'on':''}" data-sub="${v}">${n}</button>`).join('')}
  $('calBox').classList.toggle('hide',view!=='cal');
@@ -512,7 +514,7 @@ $('qaMic').onclick=()=>{const SR=window.SpeechRecognition||window.webkitSpeechRe
  try{const r=new SR();r.lang=navigator.language||'en-US';r.onresult=e=>{$('qaText').value=e.results[0][0].transcript;$('qaMsg').textContent=''};r.onerror=()=>{$('qaMsg').textContent='Could not hear you.'};r.start();$('qaMsg').textContent='Listening…'}catch(e){$('qaMsg').textContent='Voice is not available here.'}};
 let pinRec=null,pinBuf='',pinCb=null,pinBusy=false,fails=0,until=0,forgot=false,hiddenAt=0;
 try{pinRec=JSON.parse(localStorage.getItem('tickoff-pin')||'null')}catch(e){}
-$('pinImg').src=document.querySelector('.logo img').src;
+$('pinImg').src=document.querySelector('.tlogo img').src;
 $('pinPad').innerHTML=['1','2','3','4','5','6','7','8','9','','0','b'].map(k=>k===''?'<span></span>':`<button class="${k==='b'?'nb':''}" data-k="${k}" aria-label="${k==='b'?'Delete digit':k}">${k==='b'?'←':k}</button>`).join('');
 const pinDots=()=>$('pinDots').innerHTML=[0,1,2,3].map(i=>`<span class="${i<pinBuf.length?'f':''}"></span>`).join('');
 async function hashPin(p,salt){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(salt+':'+p));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}catch(e){let h=0;for(const c of salt+p)h=(h*31+c.charCodeAt(0))|0;return 'x'+h}}
